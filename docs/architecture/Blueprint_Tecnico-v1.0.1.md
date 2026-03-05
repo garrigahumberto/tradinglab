@@ -1,4 +1,4 @@
-# 📘 Blueprint Técnico — v1.0
+# 📘 Blueprint Técnico — v1.0.1
 
 **Estado:** Activo 🟢
 **Naturaleza:** Contractual (Arquitectura Macro) + Evolutivo por Fase
@@ -222,6 +222,9 @@ El DataFrame entregado siempre incluye etiquetado explícito de granularidad y t
 - No modifica datos persistidos.
 - No comparte estado con instancias de Processing de otros Jobs.
 - No realiza operaciones de red ni accede a disco directamente. Todo dato externo entra exclusivamente vía Data Layer.
+- Prohibido el uso de métodos de relleno ciego (`.fillna()`, `ffill()`, 
+  `bfill()`) sobre datos crudos antes de calcular features. Los valores 
+  ausentes deben propagarse como NaN hacia Strategy. Ver ADR-001.
 
 **Contrato expuesto hacia Strategy:**
 ```python
@@ -239,6 +242,10 @@ El output es un DataFrame alineado temporalmente, sin dependencias de estado ocu
 - Consumir el DataFrame enriquecido entregado por Processing.
 - Aplicar las reglas de la estrategia configurada.
 - Generar señales con sus parámetros asociados.
+- Es responsabilidad exclusiva de Strategy decidir el comportamiento 
+  ante inputs NaN recibidos desde Processing. Strategy no puede delegar 
+  esta decisión hacia capas inferiores ni asumir que los datos siempre 
+  estarán completos. Ver ADR-001.
 
 **Restricciones:**
 - No accede a datos crudos.
@@ -340,6 +347,9 @@ Módulo independiente de todas las capas que contiene:
 - La librería no tiene estado propio. Es funcional y pura.
 - Toda función requiere prueba determinista en el repositorio antes de considerarse aprobada.
 - La modificación del comportamiento de una función ya aprobada constituye cambio de contrato y está prohibida sin incremento de versión mayor.
+- Las funciones de la librería deben propagar NaN de forma transparente 
+  y predecible. Ninguna función puede enmascarar ausencia de datos 
+  mediante imputación implícita. Ver ADR-001.
 
 ---
 
@@ -532,4 +542,4 @@ Phase 2 — Strategy Runtime
 
 ---
 
-*Fin del documento — Versión Dorada (v1.0)*
+*Fin del documento — Versión Dorada (v1.0.1)*

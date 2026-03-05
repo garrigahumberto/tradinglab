@@ -1,6 +1,6 @@
 # 📙 System Concept Specification (SCS)
 
-**Versión:** 1.0
+**Versión:** 1.1
 **Estado:** Activo 🟢
 **Naturaleza:** Documento Informativo — Marco Conceptual
 **Autoridad:** Define principios conceptuales. No define implementación.
@@ -162,6 +162,40 @@ Una señal es válida si:
 
 La explicabilidad es condición de auditabilidad.
 
+### 1.16 Manejo Estricto del Vacío (Missing Data)
+
+La ausencia de dato es información en sí misma y debe representarse 
+explícitamente como nulo (None / NaN). Ninguna capa del sistema puede 
+sustituir silenciosamente un dato ausente por cero ni por el valor 
+anterior disponible.
+
+La "imputación fantasma" — rellenar huecos asumiendo continuidad donde 
+no existe — está prohibida en todas las capas del sistema sin excepción. 
+Strategy puede decidir qué hacer ante un NaN recibido, pero no puede 
+eliminarlo artificialmente para facilitar su cálculo.
+
+La presencia de NaN en un DataFrame es una señal legítima del sistema, 
+no un error a corregir en silencio.
+
+### 1.17 Epistemología: Feature vs Signal
+
+Una Feature es un hecho derivado matemáticamente de datos consolidados. 
+No puede ser falsa por construcción: dado el mismo input, produce 
+siempre el mismo output. No contiene intención ni interpretación.
+
+Una Signal es una interpretación estratégica de Features. Puede ser 
+falsa. Su validez es empírica, no matemática, y debe demostrarse 
+fuera de muestra.
+
+Esta frontera no es semántica sino arquitectónica: garantiza que la 
+lógica de mercado nunca contamine el cálculo de variables, y que 
+las hipótesis sean evaluadas sobre hechos, no sobre hechos ya 
+interpretados.
+
+Introducir heurísticas de mercado dentro del cálculo de una Feature 
+colapsa esta frontera y convierte el sistema en una caja negra 
+no auditable.
+
 ---
 
 ## 2️⃣ Glosario del Sistema
@@ -174,12 +208,13 @@ Esta sección registra definiciones formales necesarias para evitar ambigüedad 
 | **Contrato** | Interfaz pública entre capas. |
 | **Snapshot** | Estado inmutable de datos consolidados en un instante. |
 | **Dato consolidado** | Unidad mínima persistida y reproducible. |
-| **Feature** | Variable cuantitativa pura derivada de datos. |
-| **Señal** | Output de lógica estratégica con metadata de explicabilidad. |
+| **Feature** | Hecho derivado matemáticamente de datos consolidados. No puede ser falso por construcción. Ver sección 1.17. |
+| **Signal** | Interpretación estratégica de Features. Puede ser falsa. Su validez es empírica y debe validarse fuera de muestra. Ver sección 1.17. |
 | **Fuente de verdad** | Origen autorizado y persistido de un tipo de dato. |
 | **Hueco** | Intervalo temporal sin datos persistidos. |
 | **Stub** | Sustituto temporal que respeta contrato oficial. |
 | **Edge** | Ventaja estadística reproducible bajo condiciones reales. |
+| **Imputación fantasma** | Práctica prohibida de rellenar datos ausentes con valores asumidos (cero, valor anterior) en capas no estratégicas. |
 
 ---
 
