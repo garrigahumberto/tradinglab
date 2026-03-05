@@ -1,0 +1,2 @@
+class DataBuffer:
+    pass

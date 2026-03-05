@@ -1,0 +1,2 @@
+class SubscriptionRegistry:
+    pass

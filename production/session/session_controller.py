@@ -1,0 +1,2 @@
+class SessionController:
+    pass
