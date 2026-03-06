@@ -79,6 +79,70 @@ de responsabilidades.
 
 ---
 
-## ADR-002
+## ADR-002 — Agregación de RealTimeBars en DataDispatcher
+
+**Estado:** Aprobado
+**Fecha:** 2026-03
+**Documentos afectados:** Blueprint Técnico (Data Layer responsibilities) · Phase 0 Implementation Spec (DataDispatcher) · ADR-001
+
+### Decisión
+
+La agregación de RealTimeBars (5s) hacia temporalidades superiores se implementará dentro del componente `DataDispatcher` del Data Layer.
+
+`DataDispatcher` será responsable de:
+1. Recibir las barras de 5 segundos provenientes de `ConnectionManager`.
+2. Insertarlas en el `DataBuffer`.
+3. Mantener el estado temporal necesario para construir barras agregadas.
+4. Emitir barras consolidadas cuando se complete la ventana temporal correspondiente.
+
+El resultado de esta agregación será tratado como dato consolidado y podrá ser servido mediante el contrato `get_snapshot`. Si el contrato `get_snapshot` solicita una temporalidad que requiere agregación, DataDispatcher provee el resultado generado.
+
+### Contexto
+
+La API de Interactive Brokers (IBKR) proporciona el stream de datos en tiempo real mediante el endpoint `reqRealTimeBars`, con una granularidad fija de 5 segundos. El sistema requerirá trabajar con temporalidades superiores (e.g., 1 minuto, 5 minutos), declaradas en los `JobConfig`. Se necesita un mecanismo de agregación determinista antes de exponer los datos a otras capas.
+
+### Problema
+
+La arquitectura exige una estricta separación de responsabilidades. El Processing Layer tiene responsabilidad exclusiva sobre transformaciones analíticas, pero no debe realizar transformaciones estructurales de los datos de mercado crudos (responsabilidad de ingestión). Si la agregación se hiciese en Processing o Strategy, violaría el Blueprint Técnico.
+
+### Reglas de Agregación y Determinismo
+
+Para garantizar que la agregación sea determinista y reproducible:
+- **Open:** Primer open de la ventana.
+- **High:** Máximo de todos los highs de la ventana.
+- **Low:** Mínimo de todos los lows de la ventana.
+- **Close:** Último close recibido en la ventana.
+- **Volume:** Suma de volúmenes en la ventana.
+
+Además:
+- Las barras se agregan únicamente a partir de datos confirmados.
+- Una barra agregada no puede modificarse una vez emitida.
+- Las ventanas deben alinearse a límites temporales estándar (e.g., 10:01:00, 10:02:00).
+
+### Alternativas descartadas
+
+**Alternativa A — Agregación en Processing Layer:**
+Rechazada porque violaría la frontera arquitectónica. Processing debe recibir datos ya consolidados y puros.
+
+**Alternativa B — Agregación en Persistence Layer:**
+Rechazada porque la persistencia es responsable de almacenar, no de transformar. Evitaría además servir datos desde memoria a través de `DataBuffer`.
+
+**Alternativa C — Agregación en Strategy Layer:**
+Rechazada porque Strategy está encargada de interpretar señales, no de formatear y estructurar datos de mercado.
+
+### Consecuencias
+
+- Mantiene las transformaciones estructurales confinadas al Data Layer.
+- Asegura la pureza del Processing Layer (operaciones analíticas sobre datos listos).
+- Strategy siempre operará sobre barras consistentes y consolidadas.
+- Incrementará la complejidad del `DataDispatcher` al introducir estado temporal para las ventanas de agregación.
+
+### Notas
+
+Esta decisión aplica para la Fase 0. Ante futuras fuentes de datos en tiempo real, la política de agregación deberá alinearse con este ADR para garantizar la reproducibilidad del sistema completo.
+
+---
+
+## ADR-003
 
 *(Reservado para próxima decisión arquitectónica significativa)*
