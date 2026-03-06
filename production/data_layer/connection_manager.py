@@ -2,7 +2,7 @@ import asyncio
 import logging
 import time
 from typing import Dict, Optional, Any
-from ib_insync import IB, util, Object
+from ib_insync import IB, util
 
 # Importar configuración de logs (idealmente en common o utils)
 # Se asume la existencia de un logger preconfigurado para errores críticos.
