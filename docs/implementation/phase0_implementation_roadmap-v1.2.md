@@ -579,11 +579,11 @@ que respeten exactamente el esquema canónico.
 
 Fase 0 se considera completada cuando el sistema demuestra:
 
-- [ ] Conexión estable con IBKR
-- [ ] Reconexión automática tras desconexión con backoff exponencial
-- [ ] Absorción silenciosa del reinicio diario de TWS
-- [ ] Manejo de pacing limits sin fallar ni insistir ante rechazos reiterados
-- [ ] Recepción correcta de datos históricos
+- [x] Conexión estable con IBKR
+- [x] Reconexión automática tras desconexión con backoff exponencial
+- [x] Absorción silenciosa del reinicio diario de TWS
+- [x] Manejo de pacing limits sin fallar ni insistir ante rechazos reiterados
+- [x] Recepción correcta de datos históricos
 - [ ] Recepción correcta de RealTimeBars
 - [ ] Costura determinista entre histórico y tiempo real
 - [ ] Persistencia correcta en el esquema de partición canónico de MarketDB

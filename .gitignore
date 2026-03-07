@@ -45,3 +45,14 @@ marketdb/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Archivos de auditorias
+audits/
+
+# Archivos Temporales
+.temp/
+
+# Archivos de reglas
+.agents/rules/
+.aiexclude
+
