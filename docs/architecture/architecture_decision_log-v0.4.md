@@ -1,7 +1,7 @@
 # Architecture Decision Log
 
 **Estado:** Activo
-**Versión:** 0.2
+**Versión:** 0.4
 **Naturaleza:** Registro informativo de decisiones arquitectónicas
 **Autoridad:** Ninguna. Los contratos derivados viven en el Blueprint.
 **Alineación:** Blueprint Técnico · System Concept Specification
@@ -476,6 +476,146 @@ La existencia de un CDM estricto produce: desacoplamiento entre módulos, pipeli
 
 ---
 
+## ADR-007 — Separación de Responsabilidades en el Data Layer
+
+**Estado:** Aprobado
+**Fecha:** 2026-03
+**Documentos afectados:** Blueprint Técnico §1.2 · Stage 1–7 del Data Layer
+
+### Decisión
+
+El Data Layer se organiza bajo el principio de separación estricta de responsabilidades.
+Cada componente posee una función claramente delimitada y no debe asumir responsabilidades de otros componentes.
+
+La división de responsabilidades es la siguiente:
+
+| Componente | Responsabilidad |
+| :--- | :--- |
+| ConnectionManager | Gestión de conexión con IBKR y control de pacing |
+| HistoricalHandler | Solicitud y normalización de datos históricos |
+| RealTimeHandler | Recepción y normalización de barras en tiempo real |
+| DataDispatcher | Orquestación del flujo de datos y costura histórico-RT |
+| DataBuffer | Almacenamiento temporal de datos normalizados |
+| PersistenceManager | Persistencia en almacenamiento duradero |
+
+### Restricciones
+
+Cada componente tiene prohibido realizar funciones fuera de su ámbito.
+
+Ejemplos:
+
+**HistoricalHandler**
+✔ Solicitar datos históricos
+✔ Normalizar al CDM
+✘ Persistir datos
+✘ Resamplear datos
+✘ Tomar decisiones de trading
+
+**ConnectionManager**
+✔ Conectar/desconectar
+✔ Controlar pacing
+✘ Decidir qué datos solicitar
+✘ Interpretar datos
+
+**DataBuffer**
+✔ Almacenar snapshots
+✔ Retornar snapshots
+✘ Limpiar datos
+✘ Transformar datos
+
+### Contexto
+
+Los sistemas de trading tienden a evolucionar rápidamente durante el desarrollo.
+Sin una separación explícita de responsabilidades, los módulos pueden comenzar a absorber lógica que no les corresponde, generando:
+* acoplamientos ocultos
+* dependencias circulares
+* dificultad para auditar el flujo de datos
+
+### Alternativas descartadas
+
+**Alternativa A — Componentes multifunción:**
+Permitir que los módulos realicen múltiples tareas si es conveniente. Descartada porque aumenta el acoplamiento, dificulta el testing y complica la evolución del sistema.
+
+**Alternativa B — Separación solo documentada en Blueprint:**
+Descartada porque el Blueprint describe arquitectura, pero no registra el razonamiento de la decisión.
+
+### Consecuencias
+
+* Los módulos del Data Layer permanecen pequeños y auditables.
+* Los errores se localizan más fácilmente.
+* Las responsabilidades de cada componente pueden verificarse mediante auditoría de código.
+* Los invariantes arquitectónicos pueden comprobarse automáticamente.
+
+### Relación con otros ADR
+
+| ADR | Relación |
+| :--- | :--- |
+| ADR-006 | Los productores de datos deben respetar el CDM |
+| ADR-008 | Define el comportamiento pasivo del DataBuffer |
+
+---
+
+## ADR-008 — DataBuffer como Almacén Pasivo
+
+**Estado:** Aprobado
+**Fecha:** 2026-03
+**Documentos afectados:** Stage 4 (DataBuffer) · Stage 7 (DataDispatcher)
+
+### Decisión
+
+El DataBuffer es un componente pasivo cuya única responsabilidad es almacenar y retornar snapshots de datos normalizados.
+
+El DataBuffer no realiza ninguna transformación sobre los datos que almacena.
+
+Sus responsabilidades se limitan a:
+* almacenar DataFrames
+* resolver claves
+* retornar snapshots
+
+### Restricciones
+
+El DataBuffer tiene prohibido realizar:
+* limpieza de datos
+* normalización
+* resampling
+* stitching histórico-RT
+* persistencia
+* interpretación de datos
+
+Todas esas funciones corresponden a otros componentes del Data Layer.
+
+### Contexto
+
+El DataBuffer actúa como punto central de acceso a los datos del sistema.
+Si el buffer comenzara a realizar transformaciones, se producirían varios problemas:
+* duplicación de lógica con los productores de datos
+* comportamiento implícito difícil de auditar
+* dependencia de orden de operaciones
+
+### Alternativas descartadas
+
+**Alternativa A — Buffer inteligente:**
+Permitir que el DataBuffer realice normalización o limpieza automática. Descartada porque oculta transformaciones, dificulta la trazabilidad de datos y viola el principio de responsabilidades únicas.
+
+**Alternativa B — Buffer con lógica de stitching:**
+Delegar la costura histórico-RT al buffer. Descartada porque esa responsabilidad pertenece a DataDispatcher (ver ADR-004).
+
+### Consecuencias
+
+* El DataBuffer es una estructura simple y predecible.
+* La limpieza y normalización ocurren exclusivamente en los productores de datos.
+* El flujo de datos del sistema permanece explícito y auditable.
+
+### Relación con otros ADR
+
+| ADR | Relación |
+| :--- | :--- |
+| ADR-003 | Define la clave compuesta del buffer |
+| ADR-004 | El stitching se realiza fuera del buffer |
+| ADR-006 | El buffer solo almacena datos ya normalizados |
+
+---
+
 ## Registro de versiones
 
 | Versión | Cambio |
@@ -483,3 +623,4 @@ La existencia de un CDM estricto produce: desacoplamiento entre módulos, pipeli
 | v0.1 | ADR-001 incorporado. ADR-002 reservado. |
 | v0.2 | ADR-002 al ADR-005 incorporados tras desarrollo de Stage 1 y Stage 2. |
 | v0.3 | ADR-006 incorporado (Canonical Data Model) |
+| v0.4 | ADR-007 y ADR-008 incorporados |
